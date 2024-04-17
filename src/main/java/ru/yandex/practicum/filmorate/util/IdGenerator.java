@@ -9,6 +9,6 @@ public class IdGenerator {
     }
 
     public static synchronized long generateUserId() {
-        return filmsIdCounter++;
+        return usersIdCounter++;
     }
 }
