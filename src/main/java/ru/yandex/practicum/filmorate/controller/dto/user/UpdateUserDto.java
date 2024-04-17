@@ -19,7 +19,7 @@ public class UpdateUserDto {
     private String name;
     private LocalDate birthday;
 
-    public User updateUser(User user) {
+    public User toUser(User user) {
         if (email != null && !email.isEmpty()) {
             user.setEmail(email);
         }

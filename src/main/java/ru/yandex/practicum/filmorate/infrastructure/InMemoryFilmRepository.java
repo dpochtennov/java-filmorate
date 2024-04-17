@@ -3,6 +3,7 @@ package ru.yandex.practicum.filmorate.infrastructure;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.repository.FilmRepository;
+import ru.yandex.practicum.filmorate.util.IdGenerator;
 
 import java.util.*;
 
@@ -11,9 +12,11 @@ public class InMemoryFilmRepository implements FilmRepository {
     private final Map<Long, Film> films = new HashMap<>();
 
     @Override
-    public Long create(Film film) {
-        films.put(film.getId(), film);
-        return film.getId();
+    public Film create(Film film) {
+        Long id = IdGenerator.generateId();
+        film.setId(id);
+        films.put(id, film);
+        return film;
     }
 
     @Override
@@ -28,8 +31,8 @@ public class InMemoryFilmRepository implements FilmRepository {
     }
 
     @Override
-    public Long update(Film film) {
+    public Film update(Film film) {
         films.put(film.getId(), film);
-        return film.getId();
+        return film;
     }
 }

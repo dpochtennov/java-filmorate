@@ -7,11 +7,11 @@ import java.util.Optional;
 
 public interface UserRepository {
 
-    public Long create(User user);
+    User create(User user);
 
-    public Optional<User> findBy(Long id);
+    Optional<User> findBy(Long id);
 
-    public Collection<User> findAll();
+    Collection<User> findAll();
 
-    public Long update(User user);
+    User update(User user);
 }

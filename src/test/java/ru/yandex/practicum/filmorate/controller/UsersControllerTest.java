@@ -9,13 +9,13 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.repository.UserRepository;
-import ru.yandex.practicum.filmorate.util.IdGenerator;
 
 import java.time.LocalDate;
 import java.time.Month;
 import java.util.List;
 import java.util.Optional;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -28,9 +28,6 @@ public class UsersControllerTest {
 
     @MockBean
     private UserRepository userRepository;
-
-    @MockBean
-    private IdGenerator idGenerator;
 
     @Test
     public void testGetUserById() throws Exception {
@@ -81,7 +78,14 @@ public class UsersControllerTest {
 
     @Test
     public void testCreateUserSuccessfully() throws Exception {
-        when(idGenerator.generateId()).thenReturn(1L);
+        User expectedUser = new User(
+                1L,
+                "email@test.com",
+                "login_test",
+                "John Wick",
+                LocalDate.of(1888, Month.APRIL, 1)
+        );
+        when(userRepository.create(any())).thenReturn(expectedUser);
 
         mockMvc.perform(MockMvcRequestBuilders.post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -96,7 +100,6 @@ public class UsersControllerTest {
 
     @Test
     public void testCreateUserEmptyEmail() throws Exception {
-        when(idGenerator.generateId()).thenReturn(1L);
 
         mockMvc.perform(MockMvcRequestBuilders.post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -109,7 +112,6 @@ public class UsersControllerTest {
 
     @Test
     public void testCreateUserInvalidEmailFormat() throws Exception {
-        when(idGenerator.generateId()).thenReturn(1L);
 
         mockMvc.perform(MockMvcRequestBuilders.post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -122,7 +124,6 @@ public class UsersControllerTest {
 
     @Test
     public void testCreateUserNullEmail() throws Exception {
-        when(idGenerator.generateId()).thenReturn(1L);
 
         mockMvc.perform(MockMvcRequestBuilders.post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -135,7 +136,6 @@ public class UsersControllerTest {
 
     @Test
     public void testCreateUserEmptyLogin() throws Exception {
-        when(idGenerator.generateId()).thenReturn(1L);
 
         mockMvc.perform(MockMvcRequestBuilders.post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -148,7 +148,6 @@ public class UsersControllerTest {
 
     @Test
     public void testCreateUserInvalidLoginFormat() throws Exception {
-        when(idGenerator.generateId()).thenReturn(1L);
 
         mockMvc.perform(MockMvcRequestBuilders.post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -161,7 +160,6 @@ public class UsersControllerTest {
 
     @Test
     public void testCreateUserNullLogin() throws Exception {
-        when(idGenerator.generateId()).thenReturn(1L);
 
         mockMvc.perform(MockMvcRequestBuilders.post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -173,7 +171,14 @@ public class UsersControllerTest {
 
     @Test
     public void testCreateUserWithoutName() throws Exception {
-        when(idGenerator.generateId()).thenReturn(1L);
+        User expectedUser = new User(
+                1L,
+                "email@test.com",
+                "login_test",
+                "login_test",
+                LocalDate.of(1888, Month.APRIL, 1)
+        );
+        when(userRepository.create(any())).thenReturn(expectedUser);
 
         mockMvc.perform(MockMvcRequestBuilders.post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -188,7 +193,14 @@ public class UsersControllerTest {
 
     @Test
     public void testCreateUserWithEmptyName() throws Exception {
-        when(idGenerator.generateId()).thenReturn(1L);
+        User expectedUser = new User(
+                1L,
+                "email@test.com",
+                "login_test",
+                "login_test",
+                LocalDate.of(1888, Month.APRIL, 1)
+        );
+        when(userRepository.create(any())).thenReturn(expectedUser);
 
         mockMvc.perform(MockMvcRequestBuilders.post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -203,7 +215,6 @@ public class UsersControllerTest {
 
     @Test
     public void testCreateUserNullBirthday() throws Exception {
-        when(idGenerator.generateId()).thenReturn(1L);
 
         mockMvc.perform(MockMvcRequestBuilders.post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -217,7 +228,6 @@ public class UsersControllerTest {
 
     @Test
     public void testCreateUserBirthdayInTheFuture() throws Exception {
-        when(idGenerator.generateId()).thenReturn(1L);
 
         mockMvc.perform(MockMvcRequestBuilders.post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -238,7 +248,15 @@ public class UsersControllerTest {
                 "John Wick",
                 LocalDate.of(1888, Month.APRIL, 1)
         );
+        User updatedUser = new User(
+                id,
+                "new@test.com",
+                "new_login_test",
+                "John Wicked",
+                LocalDate.of(1900, Month.APRIL, 1)
+        );
         when(userRepository.findBy(id)).thenReturn(Optional.of(user));
+        when(userRepository.update(updatedUser)).thenReturn(updatedUser);
 
         mockMvc.perform(MockMvcRequestBuilders.put("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -282,7 +300,15 @@ public class UsersControllerTest {
                 "John Wick",
                 LocalDate.of(1888, Month.APRIL, 1)
         );
+        User updatedUser = new User(
+                id,
+                "email@test.com",
+                "new_login_test",
+                "John Wicked",
+                LocalDate.of(1900, Month.APRIL, 1)
+        );
         when(userRepository.findBy(id)).thenReturn(Optional.of(user));
+        when(userRepository.update(updatedUser)).thenReturn(updatedUser);
 
         mockMvc.perform(MockMvcRequestBuilders.put("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -305,7 +331,15 @@ public class UsersControllerTest {
                 "John Wick",
                 LocalDate.of(1888, Month.APRIL, 1)
         );
+        User updatedUser = new User(
+                id,
+                "email@test.com",
+                "new_login_test",
+                "John Wicked",
+                LocalDate.of(1900, Month.APRIL, 1)
+        );
         when(userRepository.findBy(id)).thenReturn(Optional.of(user));
+        when(userRepository.update(updatedUser)).thenReturn(updatedUser);
 
         mockMvc.perform(MockMvcRequestBuilders.put("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -370,7 +404,15 @@ public class UsersControllerTest {
                 "John Wick",
                 LocalDate.of(1888, Month.APRIL, 1)
         );
+        User updatedUser = new User(
+                id,
+                "test@test.com",
+                "login_test",
+                "John Wicked",
+                LocalDate.of(1900, Month.APRIL, 1)
+        );
         when(userRepository.findBy(id)).thenReturn(Optional.of(user));
+        when(userRepository.update(updatedUser)).thenReturn(updatedUser);
 
         mockMvc.perform(MockMvcRequestBuilders.put("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -393,7 +435,15 @@ public class UsersControllerTest {
                 "John Wick",
                 LocalDate.of(1888, Month.APRIL, 1)
         );
+        User updatedUser = new User(
+                id,
+                "test@test.com",
+                "new_login",
+                "John Wick",
+                LocalDate.of(1900, Month.APRIL, 1)
+        );
         when(userRepository.findBy(id)).thenReturn(Optional.of(user));
+        when(userRepository.update(updatedUser)).thenReturn(updatedUser);
 
         mockMvc.perform(MockMvcRequestBuilders.put("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -416,7 +466,15 @@ public class UsersControllerTest {
                 "John Wick",
                 LocalDate.of(1888, Month.APRIL, 1)
         );
+        User updatedUser = new User(
+                id,
+                "test@test.com",
+                "new_login",
+                "John Wick",
+                LocalDate.of(1900, Month.APRIL, 1)
+        );
         when(userRepository.findBy(id)).thenReturn(Optional.of(user));
+        when(userRepository.update(updatedUser)).thenReturn(updatedUser);
 
         mockMvc.perform(MockMvcRequestBuilders.put("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -439,7 +497,15 @@ public class UsersControllerTest {
                 "John Wick",
                 LocalDate.of(1888, Month.APRIL, 1)
         );
+        User updatedUser = new User(
+                id,
+                "test@test.com",
+                "new_login",
+                "John Wicked",
+                LocalDate.of(1888, Month.APRIL, 1)
+        );
         when(userRepository.findBy(id)).thenReturn(Optional.of(user));
+        when(userRepository.update(updatedUser)).thenReturn(updatedUser);
 
         mockMvc.perform(MockMvcRequestBuilders.put("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -462,7 +528,15 @@ public class UsersControllerTest {
                 "John Wick",
                 LocalDate.of(1888, Month.APRIL, 1)
         );
+        User updatedUser = new User(
+                id,
+                "test@test.com",
+                "new_login",
+                "John Wicked",
+                LocalDate.of(1888, Month.APRIL, 1)
+        );
         when(userRepository.findBy(id)).thenReturn(Optional.of(user));
+        when(userRepository.update(updatedUser)).thenReturn(updatedUser);
 
         mockMvc.perform(MockMvcRequestBuilders.put("/users")
                         .contentType(MediaType.APPLICATION_JSON)

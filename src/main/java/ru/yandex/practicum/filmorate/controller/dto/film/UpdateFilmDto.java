@@ -17,7 +17,7 @@ public class UpdateFilmDto {
     private final LocalDate releaseDate;
     private final Long duration;
 
-    public Film updateFilm(Film film) {
+    public Film toFilm(Film film) {
         if (name != null && !name.isEmpty()) {
             film.setName(name);
         }

@@ -1,8 +1,8 @@
 package ru.yandex.practicum.filmorate.controller;
 
 import jakarta.validation.Valid;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -11,30 +11,21 @@ import ru.yandex.practicum.filmorate.controller.dto.film.FilmDto;
 import ru.yandex.practicum.filmorate.controller.dto.film.UpdateFilmDto;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.repository.FilmRepository;
-import ru.yandex.practicum.filmorate.util.IdGenerator;
 
 import java.util.List;
 import java.util.Optional;
 
 @RestController
 @RequestMapping("/films")
+@Slf4j
+@RequiredArgsConstructor
 public class FilmsController {
     private final FilmRepository filmRepository;
-    private final IdGenerator idGenerator;
-    private final Logger log = LoggerFactory.getLogger(FilmsController.class);
-
-    public FilmsController(FilmRepository filmRepository, IdGenerator idGenerator) {
-        this.filmRepository = filmRepository;
-        this.idGenerator = idGenerator;
-    }
 
     @PostMapping
     public ResponseEntity<FilmDto> createFilm(@Valid @RequestBody CreateFilmDto createFilmDto) {
         log.info("Create film request: {}", createFilmDto);
-        Film film = createFilmDto.toFilm();
-        Long id = idGenerator.generateId();
-        film.setId(id);
-        filmRepository.create(film);
+        Film film = filmRepository.create(createFilmDto.toFilm());
         log.info("Film created: {}", film);
         return ResponseEntity.status(HttpStatus.CREATED).body(FilmDto.fromFilm(film));
     }
@@ -67,10 +58,9 @@ public class FilmsController {
             log.info("Film not found: {}", updateFilmDto.getId());
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(updateFilmDto);
         }
-        Film film = maybeFilm.get();
-        updateFilmDto.updateFilm(film);
-        filmRepository.update(film);
+        Film film = updateFilmDto.toFilm(maybeFilm.get());
+        Film updatedFilm = filmRepository.update(film);
         log.info("Film updated: {}", film);
-        return ResponseEntity.ok(FilmDto.fromFilm(film));
+        return ResponseEntity.ok(FilmDto.fromFilm(updatedFilm));
     }
 }

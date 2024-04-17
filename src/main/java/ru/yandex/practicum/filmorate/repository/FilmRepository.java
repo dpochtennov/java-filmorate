@@ -7,11 +7,11 @@ import java.util.Optional;
 
 public interface FilmRepository {
 
-    public Long create(Film film);
+    Film create(Film film);
 
-    public Optional<Film> findBy(Long id);
+    Optional<Film> findBy(Long id);
 
-    public Collection<Film> findAll();
+    Collection<Film> findAll();
 
-    public Long update(Film film);
+    Film update(Film film);
 }

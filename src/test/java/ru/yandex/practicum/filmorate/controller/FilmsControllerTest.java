@@ -9,7 +9,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.repository.FilmRepository;
-import ru.yandex.practicum.filmorate.util.IdGenerator;
 
 import java.time.Duration;
 import java.time.LocalDate;
@@ -17,6 +16,7 @@ import java.time.Month;
 import java.util.List;
 import java.util.Optional;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -29,9 +29,6 @@ public class FilmsControllerTest {
 
     @MockBean
     private FilmRepository filmRepository;
-
-    @MockBean
-    private IdGenerator idGenerator;
 
     @Test
     public void testGetFilmById() throws Exception {
@@ -82,7 +79,14 @@ public class FilmsControllerTest {
 
     @Test
     public void testCreateFilmSuccessfully() throws Exception {
-        when(idGenerator.generateId()).thenReturn(1L);
+        Film expectedFilm = new Film(
+                1L,
+                "Star Wars",
+                "Science Fiction",
+                LocalDate.of(1999, Month.AUGUST, 19),
+                Duration.ofMinutes(90)
+        );
+        when(filmRepository.create(any())).thenReturn(expectedFilm);
 
         mockMvc.perform(MockMvcRequestBuilders.post("/films")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -97,7 +101,6 @@ public class FilmsControllerTest {
 
     @Test
     public void testCreateFilmEmptyName() throws Exception {
-        when(idGenerator.generateId()).thenReturn(1L);
 
         mockMvc.perform(MockMvcRequestBuilders.post("/films")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -205,7 +208,15 @@ public class FilmsControllerTest {
                 LocalDate.of(1999, Month.AUGUST, 19),
                 Duration.ofMinutes(90)
         );
+        Film updatedFilm = new Film(
+                id,
+                "Some film",
+                "Some description",
+                LocalDate.of(2009, Month.AUGUST, 19),
+                Duration.ofMinutes(50)
+        );
         when(filmRepository.findBy(id)).thenReturn(Optional.of(film));
+        when(filmRepository.update(updatedFilm)).thenReturn(updatedFilm);
 
         mockMvc.perform(MockMvcRequestBuilders.put("/films")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -249,7 +260,15 @@ public class FilmsControllerTest {
                 LocalDate.of(1999, Month.AUGUST, 19),
                 Duration.ofMinutes(90)
         );
+        Film updatedFilm = new Film(
+                id,
+                "Star Wars",
+                "Some description",
+                LocalDate.of(2009, Month.AUGUST, 19),
+                Duration.ofMinutes(50)
+        );
         when(filmRepository.findBy(id)).thenReturn(Optional.of(film));
+        when(filmRepository.update(updatedFilm)).thenReturn(updatedFilm);
 
         mockMvc.perform(MockMvcRequestBuilders.put("/films")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -271,14 +290,22 @@ public class FilmsControllerTest {
                 LocalDate.of(1999, Month.AUGUST, 19),
                 Duration.ofMinutes(90)
         );
+        Film updatedFilm = new Film(
+                id,
+                "Some name",
+                "Science Fiction",
+                LocalDate.of(2009, Month.AUGUST, 19),
+                Duration.ofMinutes(50)
+        );
         when(filmRepository.findBy(id)).thenReturn(Optional.of(film));
+        when(filmRepository.update(updatedFilm)).thenReturn(updatedFilm);
 
         mockMvc.perform(MockMvcRequestBuilders.put("/films")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"id\": 1, \"name\":\"\",\"description\":" +
+                        .content("{\"id\": 1, \"name\":\"Some name\",\"description\":" +
                                 "\"\",\"releaseDate\":\"2009-08-19\", \"duration\": 50 }")
                 )
-                .andExpect(content().json("{\"id\": 1, \"name\":\"Star Wars\",\"description\":" +
+                .andExpect(content().json("{\"id\": 1, \"name\":\"Some name\",\"description\":" +
                         "\"Science Fiction\",\"releaseDate\":\"2009-08-19\", \"duration\": 50 }"));
 
     }
@@ -293,7 +320,15 @@ public class FilmsControllerTest {
                 LocalDate.of(1999, Month.AUGUST, 19),
                 Duration.ofMinutes(90)
         );
+        Film updatedFilm = new Film(
+                id,
+                "Some name",
+                "Science Fiction",
+                LocalDate.of(2009, Month.AUGUST, 19),
+                Duration.ofMinutes(50)
+        );
         when(filmRepository.findBy(id)).thenReturn(Optional.of(film));
+        when(filmRepository.update(updatedFilm)).thenReturn(updatedFilm);
 
         mockMvc.perform(MockMvcRequestBuilders.put("/films")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -309,13 +344,21 @@ public class FilmsControllerTest {
     public void testUpdateFilmByIdTooOldReleaseDate() throws Exception {
         Long id = 1L;
         Film film = new Film(
-                id,
-                "Star Wars",
-                "Science Fiction",
-                LocalDate.of(1999, Month.AUGUST, 19),
-                Duration.ofMinutes(90)
+            id,
+            "Star Wars",
+            "Science Fiction",
+            LocalDate.of(1999, Month.AUGUST, 19),
+            Duration.ofMinutes(90)
+        );
+        Film updatedFilm = new Film(
+            id,
+            "Some name",
+            "Some description",
+            LocalDate.of(1999, Month.AUGUST, 19),
+            Duration.ofMinutes(50)
         );
         when(filmRepository.findBy(id)).thenReturn(Optional.of(film));
+        when(filmRepository.update(updatedFilm)).thenReturn(updatedFilm);
 
         mockMvc.perform(MockMvcRequestBuilders.put("/films")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -337,7 +380,15 @@ public class FilmsControllerTest {
                 LocalDate.of(1999, Month.AUGUST, 19),
                 Duration.ofMinutes(90)
         );
+        Film updatedFilm = new Film(
+                id,
+                "Some name",
+                "Some description",
+                LocalDate.of(1999, Month.AUGUST, 19),
+                Duration.ofMinutes(90)
+        );
         when(filmRepository.findBy(id)).thenReturn(Optional.of(film));
+        when(filmRepository.update(updatedFilm)).thenReturn(updatedFilm);
 
         mockMvc.perform(MockMvcRequestBuilders.put("/films")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -359,7 +410,15 @@ public class FilmsControllerTest {
                 LocalDate.of(1999, Month.AUGUST, 19),
                 Duration.ofMinutes(90)
         );
+        Film updatedFilm = new Film(
+                id,
+                "Some name",
+                "Some description",
+                LocalDate.of(1999, Month.AUGUST, 19),
+                Duration.ofMinutes(90)
+        );
         when(filmRepository.findBy(id)).thenReturn(Optional.of(film));
+        when(filmRepository.update(updatedFilm)).thenReturn(updatedFilm);
 
         mockMvc.perform(MockMvcRequestBuilders.put("/films")
                         .contentType(MediaType.APPLICATION_JSON)

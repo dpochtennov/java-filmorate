@@ -1,8 +1,8 @@
 package ru.yandex.practicum.filmorate.controller;
 
 import jakarta.validation.Valid;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -11,30 +11,21 @@ import ru.yandex.practicum.filmorate.controller.dto.user.UpdateUserDto;
 import ru.yandex.practicum.filmorate.controller.dto.user.UserDto;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.repository.UserRepository;
-import ru.yandex.practicum.filmorate.util.IdGenerator;
 
 import java.util.List;
 import java.util.Optional;
 
 @RestController
 @RequestMapping("/users")
+@Slf4j
+@RequiredArgsConstructor
 public class UsersController {
     private final UserRepository userRepository;
-    private final IdGenerator idGenerator;
-    private final Logger log = LoggerFactory.getLogger(UsersController.class);
-
-    public UsersController(UserRepository userRepository, IdGenerator idGenerator) {
-        this.userRepository = userRepository;
-        this.idGenerator = idGenerator;
-    }
 
     @PostMapping
     public ResponseEntity<UserDto> createUser(@Valid @RequestBody CreateUserDto createUserDto) {
         log.info("Create user request: {}", createUserDto);
-        User user = createUserDto.toUser();
-        Long id = idGenerator.generateId();
-        user.setId(id);
-        userRepository.create(user);
+        User user = userRepository.create(createUserDto.toUser());
         log.info("User created: {}", user);
         return ResponseEntity.status(HttpStatus.CREATED).body(UserDto.fromUser(user));
     }
@@ -67,10 +58,9 @@ public class UsersController {
             log.info("User not found: {}", updateUserDto.getId());
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(updateUserDto);
         }
-        User user = maybeUser.get();
-        updateUserDto.updateUser(user);
-        userRepository.update(user);
+        User user = updateUserDto.toUser(maybeUser.get());
+        User updatedUser = userRepository.update(user);
         log.info("User updated: {}", user);
-        return ResponseEntity.ok(UserDto.fromUser(user));
+        return ResponseEntity.ok(UserDto.fromUser(updatedUser));
     }
 }

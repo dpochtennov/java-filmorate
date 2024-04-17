@@ -3,6 +3,7 @@ package ru.yandex.practicum.filmorate.infrastructure;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.repository.UserRepository;
+import ru.yandex.practicum.filmorate.util.IdGenerator;
 
 import java.util.*;
 
@@ -11,9 +12,11 @@ public class InMemoryUserRepository implements UserRepository {
     private final Map<Long, User> users = new HashMap<>();
 
     @Override
-    public Long create(User user) {
-        users.put(user.getId(), user);
-        return user.getId();
+    public User create(User user) {
+        Long id = IdGenerator.generateId();
+        user.setId(id);
+        users.put(id, user);
+        return user;
     }
 
     @Override
@@ -28,8 +31,8 @@ public class InMemoryUserRepository implements UserRepository {
     }
 
     @Override
-    public Long update(User user) {
+    public User update(User user) {
         users.put(user.getId(), user);
-        return user.getId();
+        return user;
     }
 }
