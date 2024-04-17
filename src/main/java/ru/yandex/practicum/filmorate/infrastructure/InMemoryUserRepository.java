@@ -13,7 +13,7 @@ public class InMemoryUserRepository implements UserRepository {
 
     @Override
     public User create(User user) {
-        Long id = IdGenerator.generateId();
+        Long id = IdGenerator.generateUserId();
         user.setId(id);
         users.put(id, user);
         return user;

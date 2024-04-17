@@ -13,7 +13,7 @@ public class InMemoryFilmRepository implements FilmRepository {
 
     @Override
     public Film create(Film film) {
-        Long id = IdGenerator.generateId();
+        Long id = IdGenerator.generateFilmId();
         film.setId(id);
         films.put(id, film);
         return film;
