@@ -7,14 +7,14 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import ru.yandex.practicum.filmorate.exception.customExceptions.EntityNotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.repository.FilmRepository;
+import ru.yandex.practicum.filmorate.service.FilmService;
 
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.Month;
 import java.util.List;
-import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -28,7 +28,7 @@ public class FilmsControllerTest {
     private MockMvc mockMvc;
 
     @MockBean
-    private FilmRepository filmRepository;
+    private FilmService filmService;
 
     @Test
     public void testGetFilmById() throws Exception {
@@ -40,7 +40,7 @@ public class FilmsControllerTest {
             LocalDate.of(1999, Month.AUGUST, 19),
             Duration.ofMinutes(90)
         );
-        when(filmRepository.findBy(id)).thenReturn(Optional.of(film));
+        when(filmService.findById(id)).thenReturn(film);
 
         mockMvc.perform(MockMvcRequestBuilders.get("/films/" + id))
                 .andExpect(status().isOk())
@@ -52,7 +52,7 @@ public class FilmsControllerTest {
     @Test
     public void testGetFilmByIdNotFound() throws Exception {
         Long id = 1L;
-        when(filmRepository.findBy(id)).thenReturn(Optional.empty());
+        when(filmService.findById(id)).thenThrow(EntityNotFoundException.class);
 
         mockMvc.perform(MockMvcRequestBuilders.get("/films/" + id))
                 .andExpect(status().isNotFound());
@@ -68,9 +68,45 @@ public class FilmsControllerTest {
                 LocalDate.of(1999, Month.AUGUST, 19),
                 Duration.ofMinutes(90)
         );
-        when(filmRepository.findAll()).thenReturn(List.of(film));
+        when(filmService.findAll()).thenReturn(List.of(film));
 
         mockMvc.perform(MockMvcRequestBuilders.get("/films"))
+                .andExpect(status().isOk())
+                .andExpect(content().json("[{\"id\": 1, \"name\":\"Star Wars\",\"description\":" +
+                        "\"Science Fiction\",\"releaseDate\":\"1999-08-19\", \"duration\": 90 }]"));
+
+    }
+
+    @Test
+    public void testGetMostPopularFilms() throws Exception {
+        Film film = new Film(
+                1L,
+                "Star Wars",
+                "Science Fiction",
+                LocalDate.of(1999, Month.AUGUST, 19),
+                Duration.ofMinutes(90)
+        );
+        when(filmService.getMostPopularFilms(100)).thenReturn(List.of(film));
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/films/popular?count=100"))
+                .andExpect(status().isOk())
+                .andExpect(content().json("[{\"id\": 1, \"name\":\"Star Wars\",\"description\":" +
+                        "\"Science Fiction\",\"releaseDate\":\"1999-08-19\", \"duration\": 90 }]"));
+
+    }
+
+    @Test
+    public void testGetMostPopularFilmsWithNoCounterQueryParam() throws Exception {
+        Film film = new Film(
+                1L,
+                "Star Wars",
+                "Science Fiction",
+                LocalDate.of(1999, Month.AUGUST, 19),
+                Duration.ofMinutes(90)
+        );
+        when(filmService.getMostPopularFilms(10)).thenReturn(List.of(film));
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/films/popular"))
                 .andExpect(status().isOk())
                 .andExpect(content().json("[{\"id\": 1, \"name\":\"Star Wars\",\"description\":" +
                         "\"Science Fiction\",\"releaseDate\":\"1999-08-19\", \"duration\": 90 }]"));
@@ -86,7 +122,7 @@ public class FilmsControllerTest {
                 LocalDate.of(1999, Month.AUGUST, 19),
                 Duration.ofMinutes(90)
         );
-        when(filmRepository.create(any())).thenReturn(expectedFilm);
+        when(filmService.create(any())).thenReturn(expectedFilm);
 
         mockMvc.perform(MockMvcRequestBuilders.post("/films")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -201,13 +237,6 @@ public class FilmsControllerTest {
     @Test
     public void testUpdateFilmById() throws Exception {
         Long id = 1L;
-        Film film = new Film(
-                id,
-                "Star Wars",
-                "Science Fiction",
-                LocalDate.of(1999, Month.AUGUST, 19),
-                Duration.ofMinutes(90)
-        );
         Film updatedFilm = new Film(
                 id,
                 "Some film",
@@ -215,8 +244,7 @@ public class FilmsControllerTest {
                 LocalDate.of(2009, Month.AUGUST, 19),
                 Duration.ofMinutes(50)
         );
-        when(filmRepository.findBy(id)).thenReturn(Optional.of(film));
-        when(filmRepository.update(updatedFilm)).thenReturn(updatedFilm);
+        when(filmService.update(updatedFilm)).thenReturn(updatedFilm);
 
         mockMvc.perform(MockMvcRequestBuilders.put("/films")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -232,14 +260,7 @@ public class FilmsControllerTest {
     @Test
     public void testUpdateFilmByIdNoId() throws Exception {
         Long id = 1L;
-        Film film = new Film(
-                id,
-                "Star Wars",
-                "Science Fiction",
-                LocalDate.of(1999, Month.AUGUST, 19),
-                Duration.ofMinutes(90)
-        );
-        when(filmRepository.findBy(id)).thenReturn(Optional.of(film));
+        when(filmService.findById(id)).thenThrow(EntityNotFoundException.class);
 
         mockMvc.perform(MockMvcRequestBuilders.put("/films")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -252,181 +273,135 @@ public class FilmsControllerTest {
 
     @Test
     public void testUpdateFilmByIdEmptyName() throws Exception {
-        Long id = 1L;
-        Film film = new Film(
-                id,
-                "Star Wars",
-                "Science Fiction",
-                LocalDate.of(1999, Month.AUGUST, 19),
-                Duration.ofMinutes(90)
-        );
-        Film updatedFilm = new Film(
-                id,
-                "Star Wars",
-                "Some description",
-                LocalDate.of(2009, Month.AUGUST, 19),
-                Duration.ofMinutes(50)
-        );
-        when(filmRepository.findBy(id)).thenReturn(Optional.of(film));
-        when(filmRepository.update(updatedFilm)).thenReturn(updatedFilm);
 
         mockMvc.perform(MockMvcRequestBuilders.put("/films")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"id\": 1, \"name\":\"\",\"description\":" +
                                 "\"Some description\",\"releaseDate\":\"2009-08-19\", \"duration\": 50 }")
                 )
-                .andExpect(content().json("{\"id\": 1, \"name\":\"Star Wars\",\"description\":" +
-                        "\"Some description\",\"releaseDate\":\"2009-08-19\", \"duration\": 50 }"));
+                .andExpect(status().isBadRequest());
 
     }
 
     @Test
     public void testUpdateFilmByIdEmptyDescription() throws Exception {
-        Long id = 1L;
-        Film film = new Film(
-                id,
-                "Star Wars",
-                "Science Fiction",
-                LocalDate.of(1999, Month.AUGUST, 19),
-                Duration.ofMinutes(90)
-        );
-        Film updatedFilm = new Film(
-                id,
-                "Some name",
-                "Science Fiction",
-                LocalDate.of(2009, Month.AUGUST, 19),
-                Duration.ofMinutes(50)
-        );
-        when(filmRepository.findBy(id)).thenReturn(Optional.of(film));
-        when(filmRepository.update(updatedFilm)).thenReturn(updatedFilm);
 
         mockMvc.perform(MockMvcRequestBuilders.put("/films")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"id\": 1, \"name\":\"Some name\",\"description\":" +
                                 "\"\",\"releaseDate\":\"2009-08-19\", \"duration\": 50 }")
                 )
-                .andExpect(content().json("{\"id\": 1, \"name\":\"Some name\",\"description\":" +
-                        "\"Science Fiction\",\"releaseDate\":\"2009-08-19\", \"duration\": 50 }"));
+                .andExpect(status().isBadRequest());
 
     }
 
     @Test
     public void testUpdateFilmByIdTooLongDescription() throws Exception {
-        Long id = 1L;
-        Film film = new Film(
-                id,
-                "Star Wars",
-                "Science Fiction",
-                LocalDate.of(1999, Month.AUGUST, 19),
-                Duration.ofMinutes(90)
-        );
-        Film updatedFilm = new Film(
-                id,
-                "Some name",
-                "Science Fiction",
-                LocalDate.of(2009, Month.AUGUST, 19),
-                Duration.ofMinutes(50)
-        );
-        when(filmRepository.findBy(id)).thenReturn(Optional.of(film));
-        when(filmRepository.update(updatedFilm)).thenReturn(updatedFilm);
 
         mockMvc.perform(MockMvcRequestBuilders.put("/films")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"id\": 1, \"name\":\"Some name\",\"description\":\"" + "abc".repeat(100) +
                                 "\", \"releaseDate\":\"2009-08-19\", \"duration\": 50 }")
                 )
-                .andExpect(content().json("{\"id\": 1, \"name\":\"Some name\",\"description\":" +
-                        "\"Science Fiction\",\"releaseDate\":\"2009-08-19\", \"duration\": 50 }"));
+                .andExpect(status().isBadRequest());
 
     }
 
     @Test
     public void testUpdateFilmByIdTooOldReleaseDate() throws Exception {
-        Long id = 1L;
-        Film film = new Film(
-            id,
-            "Star Wars",
-            "Science Fiction",
-            LocalDate.of(1999, Month.AUGUST, 19),
-            Duration.ofMinutes(90)
-        );
-        Film updatedFilm = new Film(
-            id,
-            "Some name",
-            "Some description",
-            LocalDate.of(1999, Month.AUGUST, 19),
-            Duration.ofMinutes(50)
-        );
-        when(filmRepository.findBy(id)).thenReturn(Optional.of(film));
-        when(filmRepository.update(updatedFilm)).thenReturn(updatedFilm);
 
         mockMvc.perform(MockMvcRequestBuilders.put("/films")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"id\": 1, \"name\":\"Some name\",\"description\":" +
                                 "\"Some description\",\"releaseDate\":\"1788-08-19\", \"duration\": 50 }")
                 )
-                .andExpect(content().json("{\"id\": 1, \"name\":\"Some name\",\"description\":" +
-                        "\"Some description\",\"releaseDate\":\"1999-08-19\", \"duration\": 50 }"));
+                .andExpect(status().isBadRequest());
 
     }
 
     @Test
     public void testUpdateFilmByIdDurationIsNegative() throws Exception {
-        Long id = 1L;
-        Film film = new Film(
-                id,
-                "Star Wars",
-                "Science Fiction",
-                LocalDate.of(1999, Month.AUGUST, 19),
-                Duration.ofMinutes(90)
-        );
-        Film updatedFilm = new Film(
-                id,
-                "Some name",
-                "Some description",
-                LocalDate.of(1999, Month.AUGUST, 19),
-                Duration.ofMinutes(90)
-        );
-        when(filmRepository.findBy(id)).thenReturn(Optional.of(film));
-        when(filmRepository.update(updatedFilm)).thenReturn(updatedFilm);
-
         mockMvc.perform(MockMvcRequestBuilders.put("/films")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"id\": 1, \"name\":\"Some name\",\"description\":" +
                                 "\"Some description\",\"releaseDate\":\"1999-08-19\", \"duration\": -50 }")
                 )
-                .andExpect(content().json("{\"id\": 1, \"name\":\"Some name\",\"description\":" +
-                        "\"Some description\",\"releaseDate\":\"1999-08-19\", \"duration\": 90 }"));
+                .andExpect(status().isBadRequest());
 
     }
 
     @Test
     public void testUpdateFilmByIdDurationIsZero() throws Exception {
-        Long id = 1L;
-        Film film = new Film(
-                id,
-                "Star Wars",
-                "Science Fiction",
-                LocalDate.of(1999, Month.AUGUST, 19),
-                Duration.ofMinutes(90)
-        );
-        Film updatedFilm = new Film(
-                id,
-                "Some name",
-                "Some description",
-                LocalDate.of(1999, Month.AUGUST, 19),
-                Duration.ofMinutes(90)
-        );
-        when(filmRepository.findBy(id)).thenReturn(Optional.of(film));
-        when(filmRepository.update(updatedFilm)).thenReturn(updatedFilm);
-
         mockMvc.perform(MockMvcRequestBuilders.put("/films")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"id\": 1, \"name\":\"Some name\",\"description\":" +
                                 "\"Some description\",\"releaseDate\":\"1999-08-19\", \"duration\": 0 }")
                 )
-                .andExpect(content().json("{\"id\": 1, \"name\":\"Some name\",\"description\":" +
-                        "\"Some description\",\"releaseDate\":\"1999-08-19\", \"duration\": 90 }"));
+                .andExpect(status().isBadRequest());
 
+    }
+
+    @Test
+    public void testAddLike() throws Exception {
+        Long id = 1L;
+        Film updatedFilm = new Film(
+                id,
+                "Some film",
+                "Some description",
+                LocalDate.of(2009, Month.AUGUST, 19),
+                Duration.ofMinutes(50)
+        );
+        updatedFilm.addLikedBy(1L);
+        when(filmService.addLike(id, id)).thenReturn(updatedFilm);
+
+        mockMvc.perform(MockMvcRequestBuilders.put("/films/1/like/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isOk())
+                .andExpect(content().json("{\"id\": 1, \"name\":\"Some film\",\"description\":" +
+                        "\"Some description\",\"releaseDate\":\"2009-08-19\", \"duration\": 50, \"likedBy\": [1] }"));
+
+    }
+
+    @Test
+    public void testAddLikeWhenNoEntityFoundException() throws Exception {
+        when(filmService.addLike(1L, 1L)).thenThrow(EntityNotFoundException.class);
+
+        mockMvc.perform(MockMvcRequestBuilders.put("/films/1/like/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isNotFound());
+
+    }
+
+    @Test
+    public void testRemoveLike() throws Exception {
+        Long id = 1L;
+        Film updatedFilm = new Film(
+                id,
+                "Some film",
+                "Some description",
+                LocalDate.of(2009, Month.AUGUST, 19),
+                Duration.ofMinutes(50)
+        );
+        when(filmService.removeLike(id, id)).thenReturn(updatedFilm);
+
+        mockMvc.perform(MockMvcRequestBuilders.delete("/films/1/like/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isOk())
+                .andExpect(content().json("{\"id\": 1, \"name\":\"Some film\",\"description\":" +
+                        "\"Some description\",\"releaseDate\":\"2009-08-19\", \"duration\": 50, \"likedBy\": [] }"));
+
+    }
+
+    @Test
+    public void testRemoveLikeWhenNoEntityFoundException() throws Exception {
+        when(filmService.removeLike(1L, 1L)).thenThrow(EntityNotFoundException.class);
+
+        mockMvc.perform(MockMvcRequestBuilders.delete("/films/1/like/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isNotFound());
     }
 }

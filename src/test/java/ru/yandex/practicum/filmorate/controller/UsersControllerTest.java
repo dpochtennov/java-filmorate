@@ -7,13 +7,14 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import ru.yandex.practicum.filmorate.exception.customExceptions.EntityNotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.repository.UserRepository;
+import ru.yandex.practicum.filmorate.service.UserService;
 
 import java.time.LocalDate;
 import java.time.Month;
 import java.util.List;
-import java.util.Optional;
+import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -27,7 +28,7 @@ public class UsersControllerTest {
     private MockMvc mockMvc;
 
     @MockBean
-    private UserRepository userRepository;
+    private UserService userService;
 
     @Test
     public void testGetUserById() throws Exception {
@@ -39,19 +40,19 @@ public class UsersControllerTest {
                 "John Wick",
                 LocalDate.of(1888, Month.APRIL, 1)
         );
-        when(userRepository.findBy(id)).thenReturn(Optional.of(user));
+        when(userService.findById(id)).thenReturn(user);
 
         mockMvc.perform(MockMvcRequestBuilders.get("/users/" + id))
                 .andExpect(status().isOk())
                 .andExpect(content().json("{\"id\": 1, \"email\":\"email@test.com\",\"login\":" +
-                        "\"login_test\",\"name\":\"John Wick\", \"birthday\":\"1888-04-01\" }"));
+                        "\"login_test\",\"name\":\"John Wick\", \"birthday\":\"1888-04-01\", \"friends\":[] }"));
 
     }
 
     @Test
     public void testGetUserByIdNotFound() throws Exception {
         Long id = 1L;
-        when(userRepository.findBy(id)).thenReturn(Optional.empty());
+        when(userService.findById(id)).thenThrow(EntityNotFoundException.class);
 
         mockMvc.perform(MockMvcRequestBuilders.get("/users/" + id))
                 .andExpect(status().isNotFound());
@@ -67,7 +68,7 @@ public class UsersControllerTest {
                 "John Wick",
                 LocalDate.of(1888, Month.APRIL, 1)
         );
-        when(userRepository.findAll()).thenReturn(List.of(user));
+        when(userService.findAll()).thenReturn(List.of(user));
 
         mockMvc.perform(MockMvcRequestBuilders.get("/users"))
                 .andExpect(status().isOk())
@@ -85,7 +86,7 @@ public class UsersControllerTest {
                 "John Wick",
                 LocalDate.of(1888, Month.APRIL, 1)
         );
-        when(userRepository.create(any())).thenReturn(expectedUser);
+        when(userService.create(any())).thenReturn(expectedUser);
 
         mockMvc.perform(MockMvcRequestBuilders.post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -178,7 +179,7 @@ public class UsersControllerTest {
                 "login_test",
                 LocalDate.of(1888, Month.APRIL, 1)
         );
-        when(userRepository.create(any())).thenReturn(expectedUser);
+        when(userService.create(any())).thenReturn(expectedUser);
 
         mockMvc.perform(MockMvcRequestBuilders.post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -200,7 +201,7 @@ public class UsersControllerTest {
                 "login_test",
                 LocalDate.of(1888, Month.APRIL, 1)
         );
-        when(userRepository.create(any())).thenReturn(expectedUser);
+        when(userService.create(any())).thenReturn(expectedUser);
 
         mockMvc.perform(MockMvcRequestBuilders.post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -241,13 +242,6 @@ public class UsersControllerTest {
     @Test
     public void testUpdateUserById() throws Exception {
         Long id = 1L;
-        User user = new User(
-                id,
-                "email@test.com",
-                "login_test",
-                "John Wick",
-                LocalDate.of(1888, Month.APRIL, 1)
-        );
         User updatedUser = new User(
                 id,
                 "new@test.com",
@@ -255,8 +249,7 @@ public class UsersControllerTest {
                 "John Wicked",
                 LocalDate.of(1900, Month.APRIL, 1)
         );
-        when(userRepository.findBy(id)).thenReturn(Optional.of(user));
-        when(userRepository.update(updatedUser)).thenReturn(updatedUser);
+        when(userService.update(updatedUser)).thenReturn(updatedUser);
 
         mockMvc.perform(MockMvcRequestBuilders.put("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -271,16 +264,6 @@ public class UsersControllerTest {
 
     @Test
     public void testUpdateUserByIdNoId() throws Exception {
-        Long id = 1L;
-        User user = new User(
-                id,
-                "email@test.com",
-                "login_test",
-                "John Wick",
-                LocalDate.of(1888, Month.APRIL, 1)
-        );
-        when(userRepository.findBy(id)).thenReturn(Optional.of(user));
-
         mockMvc.perform(MockMvcRequestBuilders.put("/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"email\":\"new@test.com\",\"login\":" +
@@ -292,78 +275,28 @@ public class UsersControllerTest {
 
     @Test
     public void testUpdateUserByIdNullableEmail() throws Exception {
-        Long id = 1L;
-        User user = new User(
-                id,
-                "email@test.com",
-                "login_test",
-                "John Wick",
-                LocalDate.of(1888, Month.APRIL, 1)
-        );
-        User updatedUser = new User(
-                id,
-                "email@test.com",
-                "new_login_test",
-                "John Wicked",
-                LocalDate.of(1900, Month.APRIL, 1)
-        );
-        when(userRepository.findBy(id)).thenReturn(Optional.of(user));
-        when(userRepository.update(updatedUser)).thenReturn(updatedUser);
-
         mockMvc.perform(MockMvcRequestBuilders.put("/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"id\": 1,\"login\":" +
                                 "\"new_login_test\",\"name\":\"John Wicked\", \"birthday\":\"1900-04-01\" }")
                 )
-                .andExpect(status().isOk())
-                .andExpect(content().json("{\"id\": 1, \"email\":\"email@test.com\",\"login\":" +
-                        "\"new_login_test\",\"name\":\"John Wicked\", \"birthday\":\"1900-04-01\" }"));
+                .andExpect(status().isBadRequest());
 
     }
 
     @Test
     public void testUpdateUserByEmptyEmail() throws Exception {
-        Long id = 1L;
-        User user = new User(
-                id,
-                "email@test.com",
-                "login_test",
-                "John Wick",
-                LocalDate.of(1888, Month.APRIL, 1)
-        );
-        User updatedUser = new User(
-                id,
-                "email@test.com",
-                "new_login_test",
-                "John Wicked",
-                LocalDate.of(1900, Month.APRIL, 1)
-        );
-        when(userRepository.findBy(id)).thenReturn(Optional.of(user));
-        when(userRepository.update(updatedUser)).thenReturn(updatedUser);
-
         mockMvc.perform(MockMvcRequestBuilders.put("/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"id\": 1, \"email\":\"\", \"login\":" +
                                 "\"new_login_test\",\"name\":\"John Wicked\", \"birthday\":\"1900-04-01\" }")
                 )
-                .andExpect(status().isOk())
-                .andExpect(content().json("{\"id\": 1, \"email\":\"email@test.com\",\"login\":" +
-                        "\"new_login_test\",\"name\":\"John Wicked\", \"birthday\":\"1900-04-01\" }"));
+                .andExpect(status().isBadRequest());
 
     }
 
     @Test
     public void testUpdateUserByInvalidEmailFormat() throws Exception {
-        Long id = 1L;
-        User user = new User(
-                id,
-                "email@test.com",
-                "login_test",
-                "John Wick",
-                LocalDate.of(1888, Month.APRIL, 1)
-        );
-        when(userRepository.findBy(id)).thenReturn(Optional.of(user));
-
         mockMvc.perform(MockMvcRequestBuilders.put("/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"id\": 1, \"email\":\"@email@.ru\", \"login\":" +
@@ -375,16 +308,6 @@ public class UsersControllerTest {
 
     @Test
     public void testUpdateUserByEmptyLogin() throws Exception {
-        Long id = 1L;
-        User user = new User(
-                id,
-                "email@test.com",
-                "login_test",
-                "John Wick",
-                LocalDate.of(1888, Month.APRIL, 1)
-        );
-        when(userRepository.findBy(id)).thenReturn(Optional.of(user));
-
         mockMvc.perform(MockMvcRequestBuilders.put("/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"id\": 1, \"email\":\"new@test.com\", \"login\":" +
@@ -396,54 +319,25 @@ public class UsersControllerTest {
 
     @Test
     public void testUpdateUserByNullableLogin() throws Exception {
-        Long id = 1L;
-        User user = new User(
-                id,
-                "email@test.com",
-                "login_test",
-                "John Wick",
-                LocalDate.of(1888, Month.APRIL, 1)
-        );
-        User updatedUser = new User(
-                id,
-                "test@test.com",
-                "login_test",
-                "John Wicked",
-                LocalDate.of(1900, Month.APRIL, 1)
-        );
-        when(userRepository.findBy(id)).thenReturn(Optional.of(user));
-        when(userRepository.update(updatedUser)).thenReturn(updatedUser);
-
         mockMvc.perform(MockMvcRequestBuilders.put("/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"id\": 1, \"email\":\"test@test.com\",\"name\":\"John Wicked\", " +
                                 "\"birthday\":\"1900-04-01\" }")
                 )
-                .andExpect(status().isOk())
-                .andExpect(content().json("{\"id\": 1, \"email\":\"test@test.com\",\"login\":" +
-                        "\"login_test\",\"name\":\"John Wicked\", \"birthday\":\"1900-04-01\" }"));
+                .andExpect(status().isBadRequest());
 
     }
 
     @Test
     public void testUpdateUserByNullableName() throws Exception {
-        Long id = 1L;
-        User user = new User(
-                id,
-                "email@test.com",
-                "login_test",
-                "John Wick",
-                LocalDate.of(1888, Month.APRIL, 1)
-        );
-        User updatedUser = new User(
-                id,
+        User expectedUser = new User(
+                1L,
                 "test@test.com",
                 "new_login",
-                "John Wick",
+                "some_name",
                 LocalDate.of(1900, Month.APRIL, 1)
         );
-        when(userRepository.findBy(id)).thenReturn(Optional.of(user));
-        when(userRepository.update(updatedUser)).thenReturn(updatedUser);
+        when(userService.update(any())).thenReturn(expectedUser);
 
         mockMvc.perform(MockMvcRequestBuilders.put("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -452,100 +346,158 @@ public class UsersControllerTest {
                 )
                 .andExpect(status().isOk())
                 .andExpect(content().json("{\"id\": 1, \"email\":\"test@test.com\",\"login\":" +
-                        "\"new_login\",\"name\":\"John Wick\", \"birthday\":\"1900-04-01\" }"));
+                        "\"new_login\",\"name\":\"some_name\", \"birthday\":\"1900-04-01\" }"));
 
     }
 
     @Test
     public void testUpdateUserByEmptyName() throws Exception {
-        Long id = 1L;
-        User user = new User(
-                id,
-                "email@test.com",
-                "login_test",
-                "John Wick",
-                LocalDate.of(1888, Month.APRIL, 1)
-        );
-        User updatedUser = new User(
-                id,
+        User expectedUser = new User(
+                1L,
                 "test@test.com",
                 "new_login",
-                "John Wick",
+                "some_name",
                 LocalDate.of(1900, Month.APRIL, 1)
         );
-        when(userRepository.findBy(id)).thenReturn(Optional.of(user));
-        when(userRepository.update(updatedUser)).thenReturn(updatedUser);
+        when(userService.update(any())).thenReturn(expectedUser);
 
         mockMvc.perform(MockMvcRequestBuilders.put("/users")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"id\": 1, \"login\": \"new_login\", \"email\":\"test@test.com\"," +
-                                "\"name\":\"\", \"birthday\":\"1900-04-01\" }")
+                        .content("{\"id\": 1, \"login\": \"new_login\", \"name\": \"\", \"email\":\"test@test.com\"," +
+                                "\"birthday\":\"1900-04-01\" }")
                 )
                 .andExpect(status().isOk())
                 .andExpect(content().json("{\"id\": 1, \"email\":\"test@test.com\",\"login\":" +
-                        "\"new_login\",\"name\":\"John Wick\", \"birthday\":\"1900-04-01\" }"));
+                        "\"new_login\",\"name\":\"some_name\", \"birthday\":\"1900-04-01\" }"));
 
     }
 
     @Test
     public void testUpdateUserByNullableBirthday() throws Exception {
-        Long id = 1L;
-        User user = new User(
-                id,
-                "email@test.com",
-                "login_test",
-                "John Wick",
-                LocalDate.of(1888, Month.APRIL, 1)
-        );
-        User updatedUser = new User(
-                id,
-                "test@test.com",
-                "new_login",
-                "John Wicked",
-                LocalDate.of(1888, Month.APRIL, 1)
-        );
-        when(userRepository.findBy(id)).thenReturn(Optional.of(user));
-        when(userRepository.update(updatedUser)).thenReturn(updatedUser);
-
         mockMvc.perform(MockMvcRequestBuilders.put("/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"id\": 1, \"login\": \"new_login\", \"email\":\"test@test.com\"," +
                                 "\"name\":\"John Wicked\" }")
                 )
-                .andExpect(status().isOk())
-                .andExpect(content().json("{\"id\": 1, \"email\":\"test@test.com\",\"login\":" +
-                        "\"new_login\",\"name\":\"John Wicked\", \"birthday\":\"1888-04-01\" }"));
+                .andExpect(status().isBadRequest());
 
     }
 
     @Test
     public void testUpdateUserByFutureBirthday() throws Exception {
-        Long id = 1L;
-        User user = new User(
-                id,
-                "email@test.com",
-                "login_test",
-                "John Wick",
-                LocalDate.of(1888, Month.APRIL, 1)
-        );
-        User updatedUser = new User(
-                id,
-                "test@test.com",
-                "new_login",
-                "John Wicked",
-                LocalDate.of(1888, Month.APRIL, 1)
-        );
-        when(userRepository.findBy(id)).thenReturn(Optional.of(user));
-        when(userRepository.update(updatedUser)).thenReturn(updatedUser);
-
         mockMvc.perform(MockMvcRequestBuilders.put("/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"id\": 1, \"login\": \"new_login\", \"email\":\"test@test.com\"," +
                                 "\"name\":\"John Wicked\", \"birthday\":\"2044-04-01\" }")
                 )
+                .andExpect(status().isBadRequest());
+
+    }
+
+    @Test
+    public void testAddFriend() throws Exception {
+        User expectedUser = new User(
+                1L,
+                "test@test.com",
+                "new_login",
+                "some_name",
+                LocalDate.of(1900, Month.APRIL, 1)
+        );
+        expectedUser.addToFriend(2L);
+        when(userService.addToFriends(1L, 2L)).thenReturn(expectedUser);
+
+        mockMvc.perform(MockMvcRequestBuilders.put("/users/1/friends/2")
+                        .contentType(MediaType.APPLICATION_JSON)
+                )
                 .andExpect(status().isOk())
                 .andExpect(content().json("{\"id\": 1, \"email\":\"test@test.com\",\"login\":" +
-                        "\"new_login\",\"name\":\"John Wicked\", \"birthday\":\"1888-04-01\" }"));
+                        "\"new_login\",\"name\":\"some_name\", \"birthday\":\"1900-04-01\", \"friends\": [2] }"));
 
+    }
+
+    @Test
+    public void testAddFriendNotFound() throws Exception {
+        when(userService.addToFriends(1L, 2L)).thenThrow(EntityNotFoundException.class);
+
+        mockMvc.perform(MockMvcRequestBuilders.put("/users/1/friends/2")
+                        .contentType(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isNotFound());
+
+    }
+
+    @Test
+    public void testRemoveFriend() throws Exception {
+        User expectedUser = new User(
+                1L,
+                "test@test.com",
+                "new_login",
+                "some_name",
+                LocalDate.of(1900, Month.APRIL, 1)
+        );
+        when(userService.removeFromFriends(1L, 2L)).thenReturn(expectedUser);
+
+        mockMvc.perform(MockMvcRequestBuilders.delete("/users/1/friends/2")
+                        .contentType(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isOk())
+                .andExpect(content().json("{\"id\": 1, \"email\":\"test@test.com\",\"login\":" +
+                        "\"new_login\",\"name\":\"some_name\", \"birthday\":\"1900-04-01\", \"friends\": [] }"));
+
+    }
+
+    @Test
+    public void testRemoveFriendNotFound() throws Exception {
+        when(userService.removeFromFriends(1L, 2L)).thenThrow(EntityNotFoundException.class);
+
+        mockMvc.perform(MockMvcRequestBuilders.delete("/users/1/friends/2")
+                        .contentType(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isNotFound());
+
+    }
+
+    @Test
+    public void testGetFriendsList() throws Exception {
+        when(userService.getUserFriends(1L)).thenReturn(Set.of(2L));
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/users/1/friends")
+                        .contentType(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isOk())
+                .andExpect(content().json("[{\"id\": 2 }]"));
+
+    }
+
+    @Test
+    public void testGetFriendsListNotFound() throws Exception {
+        when(userService.getUserFriends(1L)).thenThrow(EntityNotFoundException.class);
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/users/1/friends")
+                        .contentType(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    public void testGetCommonFriends() throws Exception {
+        when(userService.getCommonFriends(1L, 2L)).thenReturn(Set.of(3L));
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/users/1/friends/common/2")
+                        .contentType(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isOk())
+                .andExpect(content().json("[{\"id\": 3 }]"));
+
+    }
+
+    @Test
+    public void testGetCommonFriendsNotFound() throws Exception {
+        when(userService.getCommonFriends(1L, 2L)).thenThrow(EntityNotFoundException.class);
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/users/1/friends/common/2")
+                        .contentType(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isNotFound());
     }
 }
