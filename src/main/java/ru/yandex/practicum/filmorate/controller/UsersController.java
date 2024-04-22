@@ -9,58 +9,65 @@ import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.controller.dto.user.CreateUserDto;
 import ru.yandex.practicum.filmorate.controller.dto.user.UpdateUserDto;
 import ru.yandex.practicum.filmorate.controller.dto.user.UserDto;
+import ru.yandex.practicum.filmorate.controller.dto.user.UserIdDto;
 import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.repository.UserRepository;
+import ru.yandex.practicum.filmorate.service.UserService;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/users")
 @Slf4j
 @RequiredArgsConstructor
 public class UsersController {
-    private final UserRepository userRepository;
+    private final UserService userService;
 
     @PostMapping
     public ResponseEntity<UserDto> createUser(@Valid @RequestBody CreateUserDto createUserDto) {
-        log.info("Create user request: {}", createUserDto);
-        User user = userRepository.create(createUserDto.toUser());
-        log.info("User created: {}", user);
+        User user = userService.create(createUserDto.toUser());
         return ResponseEntity.status(HttpStatus.CREATED).body(UserDto.fromUser(user));
     }
 
     @GetMapping
     public ResponseEntity<List<UserDto>> getAllUsers() {
-        log.info("Get all users request");
-        List<UserDto> users = userRepository.findAll().stream().map(UserDto::fromUser).toList();
-        log.info("Users found: {}", users);
+        List<UserDto> users = userService.findAll().stream().map(UserDto::fromUser).toList();
         return ResponseEntity.ok(users);
+    }
+
+    @GetMapping("/{id}/friends/common/{otherUserId}")
+    public ResponseEntity<List<UserIdDto>> getCommonFriends(@PathVariable Long id, @PathVariable Long otherUserId) {
+        Set<Long> commonFriends = userService.getCommonFriends(id, otherUserId);
+        return ResponseEntity.ok(commonFriends.stream().map(UserIdDto::new).toList());
+    }
+
+    @PutMapping("/{id}/friends/{friendId}")
+    public ResponseEntity<UserDto> addToFriends(@PathVariable Long id, @PathVariable Long friendId) {
+        User user = userService.addToFriends(id, friendId);
+        return ResponseEntity.ok(UserDto.fromUser(user));
+    }
+
+    @DeleteMapping("/{id}/friends/{friendId}")
+    public ResponseEntity<UserDto> removeFromFriends(@PathVariable Long id, @PathVariable Long friendId) {
+        User user = userService.removeFromFriends(id, friendId);
+        return ResponseEntity.ok(UserDto.fromUser(user));
+    }
+
+    @GetMapping("/{id}/friends")
+    public ResponseEntity<List<UserIdDto>> getUserFriends(@PathVariable Long id) {
+        Set<Long> userFriends = userService.getUserFriends(id);
+        return ResponseEntity.ok(userFriends.stream().map(UserIdDto::new).toList());
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<UserDto> getUserById(@PathVariable Long id) {
-        log.info("Get user by id request: {}", id);
-        Optional<User> maybeUser = userRepository.findBy(id);
-        if (maybeUser.isPresent()) {
-            log.info("User found: {}", maybeUser.get());
-            return ResponseEntity.ok(UserDto.fromUser(maybeUser.get()));
-        }
-        log.info("Film not found: {}", id);
-        return ResponseEntity.notFound().build();
+        User user = userService.findById(id);
+        return ResponseEntity.ok(UserDto.fromUser(user));
     }
 
     @PutMapping
-    public ResponseEntity<?> updateUser(@Valid @RequestBody UpdateUserDto updateUserDto) {
-        log.info("Update user request: {}", updateUserDto);
-        Optional<User> maybeUser = userRepository.findBy(updateUserDto.getId());
-        if (maybeUser.isEmpty()) {
-            log.info("User not found: {}", updateUserDto.getId());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(updateUserDto);
-        }
-        User user = updateUserDto.toUser(maybeUser.get());
-        User updatedUser = userRepository.update(user);
-        log.info("User updated: {}", user);
+    public ResponseEntity<UserDto> updateUser(@Valid @RequestBody UpdateUserDto updateUserDto) {
+        User updatedUser = userService.update(updateUserDto.toUser());
         return ResponseEntity.ok(UserDto.fromUser(updatedUser));
     }
 }

@@ -4,6 +4,7 @@ import lombok.Data;
 import ru.yandex.practicum.filmorate.model.Film;
 
 import java.time.LocalDate;
+import java.util.Set;
 
 @Data
 public class FilmDto {
@@ -13,7 +14,8 @@ public class FilmDto {
                 film.getName(),
                 film.getDescription(),
                 film.getReleaseDate(),
-                film.getDuration().toMinutes()
+                film.getDuration().toMinutes(),
+                film.getLikedBy()
         );
     }
 
@@ -22,4 +24,5 @@ public class FilmDto {
     private final String description;
     private final LocalDate releaseDate;
     private final Long duration;
+    private final Set<Long> likedBy;
 }

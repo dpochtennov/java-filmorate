@@ -4,6 +4,7 @@ import lombok.Data;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.time.LocalDate;
+import java.util.Set;
 
 @Data
 public class UserDto {
@@ -13,7 +14,8 @@ public class UserDto {
                 user.getEmail(),
                 user.getLogin(),
                 user.getName(),
-                user.getBirthday()
+                user.getBirthday(),
+                user.getFriends()
         );
     }
 
@@ -22,4 +24,5 @@ public class UserDto {
     private final String login;
     private final String name;
     private final LocalDate birthday;
+    private final Set<Long> friends;
 }

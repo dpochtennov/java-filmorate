@@ -10,57 +10,57 @@ import ru.yandex.practicum.filmorate.controller.dto.film.CreateFilmDto;
 import ru.yandex.practicum.filmorate.controller.dto.film.FilmDto;
 import ru.yandex.practicum.filmorate.controller.dto.film.UpdateFilmDto;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.repository.FilmRepository;
+import ru.yandex.practicum.filmorate.service.FilmService;
 
+import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/films")
 @Slf4j
 @RequiredArgsConstructor
 public class FilmsController {
-    private final FilmRepository filmRepository;
+    private final FilmService filmService;
 
     @PostMapping
     public ResponseEntity<FilmDto> createFilm(@Valid @RequestBody CreateFilmDto createFilmDto) {
-        log.info("Create film request: {}", createFilmDto);
-        Film film = filmRepository.create(createFilmDto.toFilm());
-        log.info("Film created: {}", film);
+        Film film = filmService.create(createFilmDto.toFilm());
         return ResponseEntity.status(HttpStatus.CREATED).body(FilmDto.fromFilm(film));
     }
 
     @GetMapping
     public ResponseEntity<List<FilmDto>> getAllFilms() {
-        log.info("Get all films request");
-        List<FilmDto> films = filmRepository.findAll().stream().map(FilmDto::fromFilm).toList();
-        log.info("Films found: {}", films);
+        List<FilmDto> films = filmService.findAll().stream().map(FilmDto::fromFilm).toList();
         return ResponseEntity.ok(films);
+    }
+
+    @GetMapping("/popular")
+    public ResponseEntity<List<FilmDto>> getMostPopularFilms(@RequestParam(defaultValue = "10") Integer count) {
+        Collection<Film> popularFilms = filmService.getMostPopularFilms(count);
+        return ResponseEntity.ok(popularFilms.stream().map(FilmDto::fromFilm).toList());
+    }
+
+    @PutMapping("/{id}/like/{userId}")
+    public ResponseEntity<FilmDto> addLike(@PathVariable Long id, @PathVariable Long userId) {
+        Film film = filmService.addLike(id, userId);
+        return ResponseEntity.ok(FilmDto.fromFilm(film));
+    }
+
+    @DeleteMapping("/{id}/like/{userId}")
+    public ResponseEntity<FilmDto> removeLike(@PathVariable Long id, @PathVariable Long userId) {
+        Film film = filmService.removeLike(id, userId);
+        return ResponseEntity.ok(FilmDto.fromFilm(film));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<FilmDto> getFilmById(@PathVariable Long id) {
-        log.info("Get film by id request: {}", id);
-        Optional<Film> maybeFilm = filmRepository.findBy(id);
-        if (maybeFilm.isPresent()) {
-            log.info("Film found: {}", maybeFilm.get());
-            return ResponseEntity.ok(FilmDto.fromFilm(maybeFilm.get()));
-        }
-        log.info("Film not found: {}", id);
-        return ResponseEntity.notFound().build();
+        Film film = filmService.findById(id);
+        return ResponseEntity.ok(FilmDto.fromFilm(film));
     }
 
     @PutMapping
-    public ResponseEntity<?> updateFilm(@Valid @RequestBody UpdateFilmDto updateFilmDto) {
-        log.info("Update film request: {}", updateFilmDto);
-        Optional<Film> maybeFilm = filmRepository.findBy(updateFilmDto.getId());
-        if (maybeFilm.isEmpty()) {
-            log.info("Film not found: {}", updateFilmDto.getId());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(updateFilmDto);
-        }
-        Film film = updateFilmDto.toFilm(maybeFilm.get());
-        Film updatedFilm = filmRepository.update(film);
-        log.info("Film updated: {}", film);
+    public ResponseEntity<FilmDto> updateFilm(@Valid @RequestBody UpdateFilmDto updateFilmDto) {
+        Film updatedFilm = filmService.update(updateFilmDto.toFilm());
         return ResponseEntity.ok(FilmDto.fromFilm(updatedFilm));
     }
 }
