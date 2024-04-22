@@ -43,14 +43,14 @@ public class UsersController {
 
     @PutMapping("/{id}/friends/{friendId}")
     public ResponseEntity<UserDto> addToFriends(@PathVariable Long id, @PathVariable Long friendId) {
-        User updatedUser = userService.addToFriends(id, friendId);
-        return ResponseEntity.ok(UserDto.fromUser(updatedUser));
+        User user = userService.addToFriends(id, friendId);
+        return ResponseEntity.ok(UserDto.fromUser(user));
     }
 
     @DeleteMapping("/{id}/friends/{friendId}")
     public ResponseEntity<UserDto> removeFromFriends(@PathVariable Long id, @PathVariable Long friendId) {
-        User updatedUser = userService.removeFromFriends(id, friendId);
-        return ResponseEntity.ok(UserDto.fromUser(updatedUser));
+        User user = userService.removeFromFriends(id, friendId);
+        return ResponseEntity.ok(UserDto.fromUser(user));
     }
 
     @GetMapping("/{id}/friends")
@@ -61,8 +61,8 @@ public class UsersController {
 
     @GetMapping("/{id}")
     public ResponseEntity<UserDto> getUserById(@PathVariable Long id) {
-        User maybeUser = userService.findById(id);
-        return ResponseEntity.ok(UserDto.fromUser(maybeUser));
+        User user = userService.findById(id);
+        return ResponseEntity.ok(UserDto.fromUser(user));
     }
 
     @PutMapping
